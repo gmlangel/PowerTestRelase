@@ -1,0 +1,32 @@
+
+.logContainer{
+    width: 68%;height: 100%;background-color: #333333;float:left;border:0px;padding: 0px 10px;font-size: 12px;overflow-y:auto;overflow-x: hidden;
+}
+.settingContainer{
+    width: 30%;height: 100%;float:left;border:0px;overflow-y: auto;overflow-x: hidden;
+}
+
+.logStyle{
+    line-height: 20px;color:#ffffff;display:block;overflow-wrap:break-word;
+}
+.logWarn{
+    color: gold;
+}
+.logErr{
+    color:red;
+}
+.logDebug{
+    color:greenyellow;
+}
+
+.concurrence_increase{
+    border-width: 1px;border-color: cadetblue;border-style: solid;padding: 10px 10px 0px 0px;
+}
+
+.div_set_ip_random_style{
+    border-width: 1px;border-color: cadetblue;border-style: solid;padding: 10px 10px 0px 0px;
+}
+
+.session_setting{
+    border-width: 1px;border-color: cadetblue;border-style: solid;padding: 10px 10px 0px 0px;
+}

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>聚能压</title>
+    <style type="text/css">
+        body,
+        html {
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+            padding: 0px;
+        }
+    </style>
+    <script type="text/javascript" src="./jq.js"></script>
+    <script type="text/javascript" src="./interfaceExec.js"></script>
+    <script type="text/javascript" src="./gmlCustom.js"></script>
+    <link rel="stylesheet" href="./layui/css/layui.css">
+    <link rel="stylesheet" href="./gml.css">
+    <!-- 用户信息编辑的工具条 -->
+    <script type="text/html" id="table_userlist_barDemo">
+        <a class="layui-btn layui-btn-xs" lay-event="roleinfo_des" id="roleinfo_des">权限详细</a>
+        <a class="layui-btn layui-btn-xs" lay-event="edit_userinfo" lay-filter="edit_userinfo">编辑</a>
+        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="delete_userinfo" lay-filter="delete_userinfo">删除</a>
+    </script>
+
+    <!-- 条件信息编辑的工具条 -->
+    <script type="text/html" id="table_condition_bar">
+        <a class="layui-btn layui-btn-xs" lay-event="btn_edit_condition" lay-filter="btn_edit_condition">编辑</a>
+        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="btn_delete_condition" lay-filter="btn_delete_condition">删除</a>
+    </script>
+
+</head>
+
+<body>
+    <div style="width: 100%;height:100%;overflow-y: hidden;">
+    <div id="log_container" class="logContainer">
+    <span class="logStyle">压测日志:</span><br/>
+    </div>
+    <div class="settingContainer">
+        <div style="padding: 20px;">
+            <form class="layui-form" lay-filter="mainForm" action="">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">压测类型</label>
+                    <div class="layui-input-block">
+                        <select name="test_type" lay-verify="required" lay-filter="test_type">
+                          <option value=""></option>
+                          <option value="0">MPU 媒体测试</option>
+                          <option value="1">MPS 信令测试</option>
+                        </select>
+                      </div>
+                </div>
+                <div class="layui-form-item">
+                  <label class="layui-form-label">Lbs地址</label>
+                  <div class="layui-input-block">
+                    <!-- 123.56.21.120:8001 -->
+                    <input type="text" name="host" value = "172.16.70.58:8001" required  lay-verify="required" placeholder="172.1.1.1:8300或blitz.mpu.com" autocomplete="off" class="layui-input">
+                  </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">并发峰值</label>
+                    <div class="layui-input-block">
+                      <input type="text" name="concurrency" required  lay-verify="required|number" placeholder="50000" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item" id="switch_ip_random_container" lay-filter="switch_ip_random_container" style="display: none;">
+                  <label class="layui-form-label">IP伪装</label>
+                  <div class="layui-input-block">
+                    <input type="checkbox" name="switch_ip_random" lay-filter="switch_ip_random" lay-skin="switch">
+                  </div>
+                </div>
+                <!-- 设置ip伪装 -->
+                <div id="div_set_ip_random" class="div_set_ip_random_style" style="display: none;">
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">伪装类型</label>
+                    <div class="layui-input-block">
+                        <select name="ip_random_type" lay-verify="required" lay-filter="ip_random_type">
+                          <option value="0">随机地域伪装</option>
+                          <option value="1">均衡地域伪装</option>
+                        </select>
+                      </div>
+                  </div>
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">可选地域</label>
+                    <div class="layui-input-block">
+                      <input type="checkbox" name="checkbox_iprandom" title="美国1" value="114.108.192.49" checked>
+                      <input type="checkbox" name="checkbox_iprandom" title="美国2" value="34.224.248.113" checked>
+                      <input type="checkbox" name="checkbox_iprandom" title="无锡1" value="121.235.195.127" checked>
+                    </div>
+                  </div>
+                </div>
+                <div class="layui-form-item">
+                  <label class="layui-form-label">并发类型</label>
+                  <div class="layui-input-block">
+                    <input type="radio" lay-filter="testing_concurrency_type" name="testing_concurrency_type" value="concurrency_increase_by_degrees" title="递增生成并发" checked>
+                    <input type="radio" lay-filter="testing_concurrency_type" name="testing_concurrency_type" value="concurrency_random" title="随机生成并发">
+                    <input type="radio" lay-filter="testing_concurrency_type" name="testing_concurrency_type" value="concurrency_all" title="一次性生成并发">
+                  </div>
+                </div>
+                <div id="div_set_concurrency_increase" class="concurrence_increase" style="display: block;">
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">递增量</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="concurrency_offset"  min="0" placeholder="1000" autocomplete="off" class="layui-input">
+                      </div>
+                      <div class="layui-input-block" style="font-size: 12px;line-height: 20px;min-height: 20px;color:#999;">每隔一段时间产生恒定并发，直到并发峰值</div>
+                  </div>
+
+                  <div class="layui-form-item">
+                      <label class="layui-form-label">递增间隔</label>
+                      <div class="layui-input-inline">
+                          <input type="text" name="concurrency_increase_offset_time"  min="0" placeholder="1" autocomplete="off" class="layui-input">
+                      </div>
+                      <div class="layui-form-mid layui-word-aux">秒</div>
+                      <div class="layui-input-block" style="clear:both;font-size: 12px;line-height: 20px;min-height: 20px;color:#999;">生成并发的间隔时间,单位:秒</div>
+                  </div>
+                </div>
+
+                <div id="div_set_concurrency_random" class="concurrence_increase" style="display: none;">
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">随机量</label>
+                    <div class="layui-input-inline" style="width: 80px;">
+                        <input type="text" name="concurrency_random_min"  min="0" placeholder="0" autocomplete="off" class="layui-input">
+                      </div>
+                      <div class="layui-form-mid layui-word-aux">&nbsp;-&nbsp;</div>
+                      <div class="layui-input-inline" style="width: 80px;">
+                        <input type="text" name="concurrency_random_max"  min="0" placeholder="1000" autocomplete="off" class="layui-input">
+                      </div>
+                      <div class="layui-input-block" style="clear:both;font-size: 12px;line-height: 20px;min-height: 20px;color:#999;">每隔一段时间产生随机个数的并发（如：50-100个），直到并发峰值</div>
+                  </div>
+                  
+                  <div class="layui-form-item">
+                      <label class="layui-form-label">随机间隔</label>
+                      <div class="layui-input-inline">
+                          <input type="text" name="concurrency_random_offset_time" min="0" placeholder="1" autocomplete="off" class="layui-input">
+                      </div>
+                      <div class="layui-form-mid layui-word-aux">秒</div>
+                      <div class="layui-input-block" style="clear:both;font-size: 12px;line-height: 20px;min-height: 20px;color:#999;">生成并发的间隔时间,单位:秒</div>
+                  </div>
+                </div>
+
+                <div class="layui-form-item">
+                  <label class="layui-form-label">房间设置</label>
+                  <div class="layui-input-block">
+                    <input type="radio" lay-filter="testing_session" name="testing_session" value="dont_have_session" title="无需 '房间' 概念"><br/>
+                    <input type="radio" lay-filter="testing_session" name="testing_session" value="custom_session_setting" title="自定义房间设置"><br/>
+                    <input type="radio" lay-filter="testing_session" name="testing_session" value="default_session_setting" title="默认房间设置" checked><br/>
+                  </div>
+                  <div id="session_radio_des" class="layui-input-block" style="clear:both;font-size: 12px;line-height: 20px;min-height: 20px;color:#999;">默认房间设置:每个房间生成2个用户,生成的房间数="并发峰值"/2</div>
+                </div>
+                <div id="div_custom_session_setting" class="session_setting" style="display: none;">
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">房间名前缀</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="session_name"  min="0" placeholder="MySession" autocomplete="off" class="layui-input">
+                      </div>
+                      <div class="layui-input-block" style="font-size: 12px;line-height: 20px;min-height: 20px;color:#999;">用于动态自增生成房间名,自增量从0开始递增1,如:MySession_0,MySession_1</div>
+                  </div>
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">房间数</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="session_count"  min="0" placeholder="1000" autocomplete="off" class="layui-input">
+                      </div>
+                      <div class="layui-input-block" style="font-size: 12px;line-height: 20px;min-height: 20px;color:#999;">需要生成的房间个数</div>
+                  </div>
+
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">房间人数</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="user_count_of_session"  min="0" placeholder="2" autocomplete="off" class="layui-input">
+                      </div>
+                      <div class="layui-input-block" style="font-size: 12px;line-height: 20px;min-height: 20px;color:#999;">每个房间中的用户数</div>
+                  </div>
+                </div>
+            
+                <div class="layui-form-item">
+                  <label class="layui-form-label">压测截止</label>
+                  <div class="layui-input-block">
+                    <input type="radio" lay-filter="testing_end_time" name="testing_end_time" value="testing_forever" title="手动停止" checked>
+                    <input type="radio" lay-filter="testing_end_time" name="testing_end_time" value="set_testing_time" title="指定时间">
+                  </div>
+                </div>
+                <div class="layui-form-item" id="div_set_Date" style="display: none;">
+                    <div class="layui-input-block">
+                        <input type="text" class="layui-input" id="tb_testing_end_time" name="tb_testing_end_time" autocomplete="off">
+                      </div>
+                </div>
+                
+                <div class="layui-form-item">
+                  <div class="layui-input-block">
+                    <button class="layui-btn" lay-submit lay-filter="formStart" id="formStart">开始压测</button>
+                    <button type="button" class="layui-btn layui-btn-primary" lay-filter="formStop" id="formStop" onclick="javascript:void(0);onStopTestingClick(this);">停止压测</button>
+                  </div>
+                </div>
+
+              </form>
+        </div>
+    </div>
+    </div>
+    <script src="./layui/layui.js"></script>
+    <script>
+        var layer = null, form = null, ele = null, table = null, laypage = null, laydate = null;
+        var table_userList = null;
+        var maxUserListLineCount = 15;
+        var table_userListCurrentPageID = 1;//用户列表的当前页， 注意这里不要用索引
+        var roleInfoMap = {};
+        var autoInfoMap = {};
+        var userCount = 0;//总用户数
+        var userlistInfo = null;
+        var userSelectPoint = 0;//用户数据起始查询点
+
+        var table_conditionList = null;
+        var maxConditionListLineCount = 15;
+        var table_conditionListCurrentPageID = 1;//条件列表的当前页码 注意这里不要用索引
+        var conditionTypeInfoMap = {};//条件信息字典
+        var conditionMap = {};//条件数组的条件ID与数组索引的映射表
+        var conditionArr = [];//条件信息数组
+        var operatorMap = {
+            "=": "x等于a",
+            ">": "x大于a",
+            "<": "x小于a",
+            ">=": "x大于等于a",
+            "<=": "x小于等于a",
+            "between": "x>=a并且小于等于b",
+            "in": "存在于a,b,c,d,e中"
+        }
+        var conditionCount = 0;//总条件数
+        var conditionSelectPoint = 0;//条件信息数据的分页起始查询点
+
+        var staticResourceDomain = "https://www.juliaol.cn:8080/"
+        var strategyCategroyMap = {};//策略类别字典
+        var strategyCategroyTemplateMap = {};//策略类别的模板存储字典
+        var strategyMap = {};//策略信息字典
+        var strategyContentMap = {};
+
+        var divTemplateStr = "";
+
+        let isTesting = false;
+
+
+        let webSocketHost = ""
+        let webSocketPort = 0;
+        let webSocketFuncName = "";//"blitzws"
+        let fullPath = "";
+
+        let isDebug = true;//是否为 调试模式
+
+        if(isDebug){
+          webSocketHost = "localhost"
+          webSocketPort = 9335;
+          webSocketFuncName = "";//"blitzws"
+          fullPath = "ws://"+webSocketHost+":"+webSocketPort+"/"+webSocketFuncName
+        }else{
+          webSocketHost = "www.juliaol.cn"
+          webSocketFuncName = "blitzpowertest"
+          fullPath = "wss://"+webSocketHost+"/"+webSocketFuncName
+        }
+        
+        //开始建立压测服务端的长连接
+        let dataProviderWebSocket = createWebSocketConn(fullPath,webSocketHost,relink)
+        //重连处理
+        function relink(){
+          console.log("websocket已断开，正在重连中")
+          setTimeout(function(){
+            dataProviderWebSocket = createWebSocketConn(fullPath,webSocketHost,relink)
+          },10000)//一定时间后，尝试重连
+        }
+        //一般直接写在一个js文件中
+        layui.use(['layer', 'form', 'element', 'table', 'laypage', 'laydate'], function () {
+            layer = layui.layer
+            form = layui.form
+            ele = layui.element
+            table = layui.table
+            laypage = layui.laypage;
+            laydate = layui.laydate;
+            //监听提交
+            form.on('submit(formStart)', function(data){
+              return onStartTestingClick(data);
+            });
+
+            form.on('radio(testing_end_time)', function(data){
+                //console.log(data.elem); //得到radio原始DOM对象
+                //console.log(data.value); //被点击的radio的value值
+                let radio_value = data.value;
+                if(radio_value == "testing_forever"){
+                    document.getElementById("div_set_Date").style.display = "none";
+                }else if(radio_value == "set_testing_time"){
+                    document.getElementById("div_set_Date").style.display = "block";
+                    //重新初始化时间控件
+                    laydate.render({
+                        elem:'#tb_testing_end_time',
+                        type:'datetime',
+                        value:new Date(),
+                        min:new Date().toDateString()
+                    })
+                }
+            });  
+
+            form.on('radio(testing_concurrency_type)', function(data){
+                //console.log(data.elem); //得到radio原始DOM对象
+                //console.log(data.value); //被点击的radio的value值
+                let radio_value = data.value;
+                if(radio_value == "concurrency_all"){
+                  $(".concurrence_increase").hide();
+                }else if(radio_value == "concurrency_increase_by_degrees"){
+                  $("#div_set_concurrency_increase").show();
+                  $("#div_set_concurrency_random").hide();
+                }else if(radio_value == "concurrency_random"){
+                  $("#div_set_concurrency_increase").hide();
+                  $("#div_set_concurrency_random").show();
+                }
+            });
+            
+            form.on('radio(testing_session)', function(data){
+                //console.log(data.elem); //得到radio原始DOM对象
+                //console.log(data.value); //被点击的radio的value值
+                let radio_value = data.value;
+                if(radio_value == "default_session_setting"){
+                  $("#div_custom_session_setting").hide();
+                  $("#session_radio_des").show()
+                }else if(radio_value == "custom_session_setting"){
+                  $("#div_custom_session_setting").show();
+                  $("#session_radio_des").hide()
+                }else if(radio_value == "dont_have_session"){
+                  $("#div_custom_session_setting").hide();
+                  $("#session_radio_des").hide()
+                }
+            });
+
+            
+            form.on('select(test_type)', function(data){
+              let selValue = data.value;
+              if(selValue == "0"){
+                //MPU压测
+                $("#switch_ip_random_container").show();//显示IP伪装 选项
+              }else{
+                $("#switch_ip_random_container").hide();//显示IP伪装 选项
+                $("#div_set_ip_random").hide();
+                form.val("mainForm",{
+                  "switch_ip_random":false
+                })
+                form.render("checkbox","switch_ip_random_container");
+              }
+            });  
+
+            form.on('switch(switch_ip_random)',function(data){
+              let selValue = data.elem.checked;
+              if(selValue == true){
+                //显示 ip伪装设置面板
+                $("#div_set_ip_random").show()
+              }else{
+                $("#div_set_ip_random").hide()
+              }
+            })
+            
+        });
+
+
+    </script>
+    
+
+</body>
+
+</html>
