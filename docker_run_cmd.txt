@@ -1,0 +1,4 @@
+docker run -d -p 80:80 --name powertest-nginx-web \
+-v /data/power-test-release/nginx/www:/usr/share/nginx/html \
+-v /data/power-test-release/nginx/conf/nginx.conf:/etc/nginx/nginx.conf \
+-v /data/power-test-release/nginx/logs:/var/log/nginx nginx
