@@ -41,6 +41,10 @@
     <div class="settingContainer">
         <div style="padding: 20px;">
             <form class="layui-form" lay-filter="mainForm" action="">
+              <div class="layui-form-item">
+                <label class="layui-form-label">压测机器数:</label>
+                <label class="layui-form-label" style="text-align: left;padding-left: 0px;" id="ser_count">0</label>
+            </div>
                 <div class="layui-form-item">
                     <label class="layui-form-label">压测类型</label>
                     <div class="layui-input-block">
@@ -246,26 +250,31 @@
 
         let isDebug = true;//是否为 调试模式
 
-        if(isDebug){
-          webSocketHost = "123.56.102.147"
-          webSocketPort = 9335;
-          webSocketFuncName = "";//"blitzws"
-          fullPath = "ws://"+webSocketHost+":"+webSocketPort+"/"+webSocketFuncName
-        }else{
-          webSocketHost = "www.juliaol.cn"
-          webSocketFuncName = "blitzpowertest"
-          fullPath = "wss://"+webSocketHost+"/"+webSocketFuncName
-        }
-        
+        //模拟分布式压测场景
+        let wsConfigArr = [
+          {"webSocketHost":"123.56.28.164","webSocketPort":9335},
+          {"webSocketHost":"123.56.102.147","webSocketPort":9335}
+        ]
+
+        //if(isDebug){
         //开始建立压测服务端的长连接
-        let dataProviderWebSocket = createWebSocketConn(fullPath,webSocketHost,relink)
-        //重连处理
-        function relink(){
-          console.log("websocket已断开，正在重连中")
-          setTimeout(function(){
-            dataProviderWebSocket = createWebSocketConn(fullPath,webSocketHost,relink)
-          },10000)//一定时间后，尝试重连
-        }
+        var dataProviderWebSocketArr = [];
+          webSocketFuncName = "";//"blitzws"
+          wsConfigArr.forEach((item,i)=>{
+            item.fullPath = "ws://"+item.webSocketHost+":"+item.webSocketPort+"/"+webSocketFuncName
+            dataProviderWebSocketArr.push(createWebSocketConn(item,i))
+          })
+        // }else{
+        //   webSocketHost = "www.juliaol.cn"
+        //   webSocketFuncName = "blitzpowertest"
+        //   fullPath = "wss://"+webSocketHost+"/"+webSocketFuncName
+        //   wsConfigArr.forEach((item,i)=>{
+        //     item.fullPath = "ws://"+item.webSocketHost+":"+item.webSocketPort+"/"+webSocketFuncName
+        //   })
+        // }
+        
+        
+
         //一般直接写在一个js文件中
         layui.use(['layer', 'form', 'element', 'table', 'laypage', 'laydate'], function () {
             layer = layui.layer

@@ -1,6 +1,8 @@
 var logClassNameArr = ["logStyle","logStyle logWarn","logStyle logErr","logStyle logDebug"];
 
 var autoStopId = -1;
+var testingResultMap = {}
+var ser_count = 0;//压测服务器数量
 //当点击了开始测试
 function onStartTestingClick(data){
     //开始压测
@@ -55,14 +57,21 @@ function onStartTestingClick(data){
             })
             obj["iplist"] = ipArr;
         }
-        if(dataProviderWebSocket){
-            if(dataProviderWebSocket.isConnected == false){
-                layer.msg("压测服务器还未连接成功，请稍后重试......")
-                return false;
+        let canStart = true;//是否可以启动
+        dataProviderWebSocketArr.forEach((sock,i)=>{
+            if(sock.isConnected == false){
+                canStart = false;
             }
-          //向服务器发送请求
-          sendWebSocketMsg(dataProviderWebSocket,JSON.stringify(obj));
+        })
+        if(canStart == false){
+            layer.msg("压测服务器还未连接成功，请稍后重试......")
+            return false;
         }
+        dataProviderWebSocketArr.forEach((sock,i)=>{
+            //向服务器发送请求
+            sendWebSocketMsg(sock,JSON.stringify(obj));
+        })
+        
         layer.msg("压测程序启动中......")
         isTesting = true;
         //计算是否需要自动停止
@@ -86,10 +95,10 @@ function onStopTestingClick(evt){
     if(autoStopId > -1)
         clearTimeout(autoStopId)
     autoStopId = -1
-    if(dataProviderWebSocket == null || (dataProviderWebSocket != null && dataProviderWebSocket.isConnected == false)){
-        layer.msg("压测服务器已断开，请稍后重试...")
-        return;
-    }
+    // if(dataProviderWebSocketArr.length > 0){
+    //     layer.msg("压测服务器已断开，请稍后重试...")
+    //     return;
+    // }
     layer.msg('压测已停止')
     if(isTesting == true){
         $("#formStart").removeClass();
@@ -97,10 +106,10 @@ function onStopTestingClick(evt){
         $("#formStop").removeClass();
         $("#formStop").addClass("layui-btn layui-btn-primary")
       let obj = {"cmd":0xff000002};
-      if(dataProviderWebSocket){
-            //向服务器发送请求
-            sendWebSocketMsg(dataProviderWebSocket,JSON.stringify(obj));
-      }
+      dataProviderWebSocketArr.forEach((sock,i)=>{
+        //向服务器发送请求
+        sendWebSocketMsg(sock,JSON.stringify(obj));
+      })
     }
     isTesting = false;
   }
@@ -116,25 +125,36 @@ function onStopTestingClick(evt){
 var pkgHead = "<gmlb>"
 var pkgFoot = "<gmle>"
 var heartbeatID = -1;
-function createWebSocketConn(fullPath,host,onCloseCallBackFunc){
-    let ws = new WebSocket(fullPath);
+function createWebSocketConn(config,id){
+    let ws = new WebSocket(config.fullPath);
+    ws.id = id;
     ws.isConnected = false;
     ws.onopen = function(){
         ws.isConnected = true;
-        console.log("ws服务:"+host+"连接成功")
+        ser_count ++;
+        document.getElementById("ser_count").innerHTML = ser_count + ""
+        console.log("ws服务:"+config.webSocketHost+"连接成功")
     }
     ws.onclose = function(){
         ws.isConnected = false;
-        console.log("ws服务:"+host+"连接断开")
+        ser_count --;
+        document.getElementById("ser_count").innerHTML = ser_count + ""
+        console.log("ws服务:"+config.webSocketHost+"连接断开")
         if(heartbeatID > -1){
             //停止心跳
             clearInterval(heartbeatID);
             heartbeatID = -1;
         }
-        if(onCloseCallBackFunc != null){
-            //调用socket 关闭回调
-            onCloseCallBackFunc()
-        }
+        testingResultMap[ws.id] = null;
+        // if(onCloseCallBackFunc != null){
+        //     //调用socket 关闭回调
+        //     onCloseCallBackFunc()
+        // }
+        //断线重连
+        console.log("websocket已断开，正在重连中")
+        setTimeout(function(){
+            createWebSocketConn(config,id)
+        },10000)//一定时间后，尝试重连
     }
     ws.onmessage = function(evt){
         let datastr = evt.data || "";
@@ -148,7 +168,7 @@ function createWebSocketConn(fullPath,host,onCloseCallBackFunc){
                 switch(command){
                     case 0xff000004:
                     //收到了压测数据更新
-                    makeTestingResultAndPrint(pkg)
+                    pushTestingResult(pkg,ws.id)//将数据存入缓冲区，并且打印
                     break;
                     case 0xff000000:
                         //收到了服务器返回的初始化信令
@@ -191,27 +211,54 @@ function createWebSocketConn(fullPath,host,onCloseCallBackFunc){
     return ws;
 }
 
+function pushTestingResult(pkg,id){
+    testingResultMap[id] = pkg;
+    //更新屏显
+    makeTestingResultAndPrint()
+}
+
 /**
  * 将压测数据json，转换为字符串
  * 
 */
-function makeTestingResultAndPrint(pkg){
-    let datatime = pkg.Nowtime || 0;
-    let timeStr = ""
-    if(datatime != 0){
-        timeStr = dateFormat("HH:MM:SS",new Date(datatime*1000))
-    }
+function makeTestingResultAndPrint(){
+    // let datatime = pkg.Nowtime || 0;
+    // let timeStr = ""
+    // if(datatime != 0){
+    //     timeStr = dateFormat("HH:MM:SS",new Date(datatime*1000))
+    // }
+    let timeStr = dateFormat("HH:MM:SS",new Date())
     let msg = "";
-    msg += "当前并发用户数: " + pkg.Cur_user_count + ",  "
-    if(pkg.Cur_sessionCount > 0){
-        msg += "当前会话数: " + pkg.Cur_sessionCount + ",  "
+    let Cur_user_count = 0;
+    let Cur_sessionCount = 0
+    let Concurrency_req_per_second = 0.0;
+    let Concurrency_complete_per_second = 0.0
+    let Success_rate_five_second = 0;
+    let UdpReqCount_per_second = 0
+    let UdpRecivedCount_per_second = 0;
+
+    for(key in testingResultMap){
+        let pkg = testingResultMap[key]
+        if(pkg){
+            Cur_user_count += pkg.Cur_user_count
+            Cur_sessionCount += pkg.Cur_sessionCount
+            Concurrency_req_per_second += pkg.Concurrency_req_per_second;
+            Concurrency_complete_per_second += pkg.Concurrency_complete_per_second
+            Success_rate_five_second += pkg.Success_rate_five_second;
+            UdpReqCount_per_second += pkg.UdpReqCount_per_second;
+            UdpRecivedCount_per_second += pkg.UdpRecivedCount_per_second
+        }
     }
-    msg += "信令req: " + pkg.Concurrency_req_per_second + "/s,  "
-    msg += "信令res: " + pkg.Concurrency_complete_per_second + "/s,  "
+    msg += "当前并发用户数: " + Cur_user_count + ",  "
+    if(Cur_sessionCount > 0){
+        msg += "当前会话数: " + Cur_sessionCount + ",  "
+    }
+    msg += "信令req: " + Concurrency_req_per_second + "/s,  "
+    msg += "信令res: " + Concurrency_complete_per_second + "/s,  "
     //msg += "每秒心跳: " + pkg.HeartBeatCount_per_second + ",  "
-    msg += "信令每5秒响应比" + (parseFloat(pkg.Success_rate_five_second) * 100).toFixed(2) + "%,  "
-    msg += "UDP发包数: " + pkg.UdpReqCount_per_second + "/s,  "
-    msg += "UDP收包数: " + pkg.UdpRecivedCount_per_second + "/s"
+    msg += "信令每5秒响应比" + (parseFloat(Success_rate_five_second) * 100).toFixed(2) + "%,  "
+    msg += "UDP发包数: " + UdpReqCount_per_second + "/s,  "
+    msg += "UDP收包数: " + UdpRecivedCount_per_second + "/s"
     printLog(msg,0,timeStr)
 }
 
