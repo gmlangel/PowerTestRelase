@@ -124,11 +124,11 @@ function onStopTestingClick(evt){
 */
 var pkgHead = "<gmlb>"
 var pkgFoot = "<gmle>"
-var heartbeatID = -1;
 function createWebSocketConn(config,id){
     let ws = new WebSocket(config.fullPath);
     ws.id = id;
     ws.isConnected = false;
+    ws.heartbeatID = -1;
     ws.onopen = function(){
         ws.isConnected = true;
         ser_count ++;
@@ -137,13 +137,13 @@ function createWebSocketConn(config,id){
     }
     ws.onclose = function(){
         ws.isConnected = false;
-        ser_count --;
         document.getElementById("ser_count").innerHTML = ser_count + ""
         console.log("ws服务:"+config.webSocketHost+"连接断开")
-        if(heartbeatID > -1){
+        if(ws.heartbeatID > -1){
             //停止心跳
-            clearInterval(heartbeatID);
-            heartbeatID = -1;
+            clearInterval(ws.heartbeatID);
+            ws.heartbeatID = -1;
+            ser_count --;
         }
         testingResultMap[ws.id] = null;
         // if(onCloseCallBackFunc != null){
@@ -182,7 +182,7 @@ function createWebSocketConn(config,id){
                             $("#formStop").addClass("layui-btn")
                         }
                         //启动心跳
-                        heartbeatID = setInterval(function(){
+                        ws.heartbeatID = setInterval(function(){
                             let obj = {"cmd":0xff000003};
                             sendWebSocketMsg(ws,JSON.stringify(obj));
                         },50000)
