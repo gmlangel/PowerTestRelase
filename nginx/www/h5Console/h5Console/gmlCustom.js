@@ -3,10 +3,11 @@ var logClassNameArr = ["logStyle","logStyle logWarn","logStyle logErr","logStyle
 var autoStopId = -1;
 var testingResultMap = {}
 var ser_count = 0;//压测服务器数量
+var startTestArgsObj = null;
 //当点击了开始测试
 function onStartTestingClick(data){
     //开始压测
-    if(isTesting == true){
+    if(isTestingState == true){
         layer.msg('正在压测中，如需重新开始，请先点击"停止压测"')
          return false;
     }
@@ -57,23 +58,23 @@ function onStartTestingClick(data){
             })
             obj["iplist"] = ipArr;
         }
-        let canStart = true;//是否可以启动
-        dataProviderWebSocketArr.forEach((sock,i)=>{
-            if(sock.isConnected == false){
-                canStart = false;
+        startTestArgsObj = obj;
+        let canStart = false;//是否可以启动
+        for(key in dataProviderWebSocketArr){
+            if(dataProviderWebSocketArr[key] && dataProviderWebSocketArr[key].isConnected == true){
+                canStart = true;
+                dataProviderWebSocketArr[key].isTesting = true;
+                startTestArgsObj.sevID = dataProviderWebSocketArr[key].id;
+                startTestArgs = JSON.stringify(startTestArgsObj)
+                sendWebSocketMsg(dataProviderWebSocketArr[key],startTestArgs);
             }
-        })
+        }
         if(canStart == false){
             layer.msg("压测服务器还未连接成功，请稍后重试......")
             return false;
         }
-        dataProviderWebSocketArr.forEach((sock,i)=>{
-            //向服务器发送请求
-            sendWebSocketMsg(sock,JSON.stringify(obj));
-        })
-        
         layer.msg("压测程序启动中......")
-        isTesting = true;
+        isTestingState = true;
         //计算是否需要自动停止
         let endTimeStr = data.field["tb_testing_end_time"];
         if(endTimeStr && endTimeStr != ""){
@@ -95,23 +96,26 @@ function onStopTestingClick(evt){
     if(autoStopId > -1)
         clearTimeout(autoStopId)
     autoStopId = -1
+    startTestArgsObj = null;
     // if(dataProviderWebSocketArr.length > 0){
     //     layer.msg("压测服务器已断开，请稍后重试...")
     //     return;
     // }
     layer.msg('压测已停止')
-    if(isTesting == true){
+    if(isTestingState == true){
         $("#formStart").removeClass();
         $("#formStart").addClass("layui-btn")
         $("#formStop").removeClass();
         $("#formStop").addClass("layui-btn layui-btn-primary")
       let obj = {"cmd":0xff000002};
-      dataProviderWebSocketArr.forEach((sock,i)=>{
-        //向服务器发送请求
-        sendWebSocketMsg(sock,JSON.stringify(obj));
-      })
+      for(key in dataProviderWebSocketArr){
+        if(dataProviderWebSocketArr[key] && dataProviderWebSocketArr[key].isConnected == true){
+            dataProviderWebSocketArr[key].isTesting = false;
+            sendWebSocketMsg(dataProviderWebSocketArr[key],JSON.stringify(obj));
+        }
+      }
     }
-    isTesting = false;
+    isTestingState = false;
   }
 
 
@@ -128,15 +132,27 @@ function createWebSocketConn(config,id){
     let ws = new WebSocket(config.fullPath);
     ws.id = id;
     ws.isConnected = false;
+    ws.isTesting = false;
     ws.heartbeatID = -1;
     ws.onopen = function(){
-        ws.isConnected = true;
         ser_count ++;
         document.getElementById("ser_count").innerHTML = ser_count + ""
         console.log("ws服务:"+config.webSocketHost+"连接成功")
+        //延迟十秒后，取ws的最终状态， 根据最终状态决定是否需要启动测试
+        setTimeout(()=>{
+            if(isTestingState == true && ws.isTesting == false){
+                ws.isTesting = true;
+                //如果此时处于测试服务已启动状态，则直接通知服务器开始测试
+                startTestArgsObj.sevID = ws.id;
+                startTestArgs = JSON.stringify(startTestArgsObj)
+                sendWebSocketMsg(ws,startTestArgs);
+            }
+        },10000);
+        ws.isConnected = true;
     }
     ws.onclose = function(){
         ws.isConnected = false;
+        ws.isTesting = false;
         document.getElementById("ser_count").innerHTML = ser_count + ""
         console.log("ws服务:"+config.webSocketHost+"连接断开")
         if(ws.heartbeatID > -1){
@@ -153,7 +169,7 @@ function createWebSocketConn(config,id){
         //断线重连
         console.log("websocket已断开，正在重连中")
         setTimeout(function(){
-            createWebSocketConn(config,id)
+            dataProviderWebSocketArr[id] = createWebSocketConn(config,id)
         },10000)//一定时间后，尝试重连
     }
     ws.onmessage = function(evt){
@@ -175,7 +191,8 @@ function createWebSocketConn(config,id){
                         let stat = pkg.isRunning
                         if(stat == true){
                             //压测已经启动，改变按钮状态
-                            isTesting = true;
+                            isTestingState = true;
+                            ws.isTesting = true;
                             $("#formStart").removeClass();
                             $("#formStart").addClass("layui-btn layui-btn-primary")
                             $("#formStop").removeClass();
@@ -192,7 +209,8 @@ function createWebSocketConn(config,id){
                         let runStat = pkg.isRunning
                         if(runStat == false){
                             //压测程序未启动成功
-                            isTesting = false;
+                            isTestingState = false;
+                            ws.isTesting = false;
                             //还原按钮状态
                             $("#formStart").removeClass();
                             $("#formStart").addClass("layui-btn layui-btn-primary")

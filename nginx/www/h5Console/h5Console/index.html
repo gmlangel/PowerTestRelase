@@ -240,7 +240,7 @@
 
         var divTemplateStr = "";
 
-        let isTesting = false;
+        let isTestingState = false;
 
 
         let webSocketHost = ""
@@ -252,17 +252,19 @@
 
         //模拟分布式压测场景
         let wsConfigArr = [
-          /*{"webSocketHost":"123.56.28.164","webSocketPort":9335},*/
-          {"webSocketHost":"123.56.102.147","webSocketPort":9335}
+          /*{"webSocketHost":"123.56.28.164","webSocketPort":9335},
+          {"webSocketHost":"123.56.102.147","webSocketPort":9335}*/
+          {"webSocketHost":"10.0.2.85","webSocketPort":9335},
+          {"webSocketHost":"10.0.5.47","webSocketPort":9335}
         ]
 
         //if(isDebug){
         //开始建立压测服务端的长连接
-        var dataProviderWebSocketArr = [];
+        var dataProviderWebSocketArr = {};
           webSocketFuncName = "";//"blitzws"
           wsConfigArr.forEach((item,i)=>{
             item.fullPath = "ws://"+item.webSocketHost+":"+item.webSocketPort+"/"+webSocketFuncName
-            dataProviderWebSocketArr.push(createWebSocketConn(item,i))
+            dataProviderWebSocketArr[i] = createWebSocketConn(item,i)
           })
         // }else{
         //   webSocketHost = "www.juliaol.cn"
