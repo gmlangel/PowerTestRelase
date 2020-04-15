@@ -115,6 +115,9 @@ function onStopTestingClick(evt){
         }
       }
     }
+    for(key in testingResultMap){
+        testingResultMap[key] = null;//清空缓存的压测结果数据
+    }
     isTestingState = false;
   }
 

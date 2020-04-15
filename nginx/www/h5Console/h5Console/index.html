@@ -74,6 +74,12 @@
                     <input type="checkbox" name="switch_ip_random" lay-filter="switch_ip_random" lay-skin="switch">
                   </div>
                 </div>
+                <div class="layui-form-item" id="switch_random_offline_container" lay-filter="switch_random_offline_container">
+                  <label class="layui-form-label">用户随机断线重连</label>
+                  <div class="layui-input-block">
+                    <input type="checkbox" name="switch_random_offline" lay-filter="switch_random_offline" lay-skin="switch">
+                  </div>
+                </div>
                 <!-- 设置ip伪装 -->
                 <div id="div_set_ip_random" class="div_set_ip_random_style" style="display: none;">
                   <div class="layui-form-item">
@@ -254,9 +260,11 @@
         let wsConfigArr = [
           /*{"webSocketHost":"123.56.28.164","webSocketPort":9335},
           {"webSocketHost":"123.56.102.147","webSocketPort":9335}*/
+
           {"webSocketHost":"10.0.2.85","webSocketPort":9335},
           {"webSocketHost":"10.0.5.47","webSocketPort":9335},
           {"webSocketHost":"10.0.2.29","webSocketPort":9335}
+          /*{"webSocketHost":"localhost","webSocketPort":9335}*/
         ]
 
         //if(isDebug){
