@@ -30,7 +30,8 @@ function onStartTestingClick(data){
             "concurrency_random_offset_time",
             "session_count",
             "user_count_of_session",
-            "tb_testing_end_time"
+            "tb_testing_end_time",
+            "offline_timeoffset"
         ]
         let tmpN;
         for(key in data.field){

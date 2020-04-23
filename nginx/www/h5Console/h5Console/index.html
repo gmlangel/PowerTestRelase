@@ -74,12 +74,6 @@
                     <input type="checkbox" name="switch_ip_random" lay-filter="switch_ip_random" lay-skin="switch">
                   </div>
                 </div>
-                <div class="layui-form-item" id="switch_random_offline_container" lay-filter="switch_random_offline_container">
-                  <label class="layui-form-label">用户随机断线重连</label>
-                  <div class="layui-input-block">
-                    <input type="checkbox" name="switch_random_offline" lay-filter="switch_random_offline" lay-skin="switch">
-                  </div>
-                </div>
                 <!-- 设置ip伪装 -->
                 <div id="div_set_ip_random" class="div_set_ip_random_style" style="display: none;">
                   <div class="layui-form-item">
@@ -100,6 +94,26 @@
                     </div>
                   </div>
                 </div>
+
+                <div class="layui-form-item" id="switch_random_offline_container" lay-filter="switch_random_offline_container">
+                  <label class="layui-form-label">用户随机断线重连</label>
+                  <div class="layui-input-block">
+                    <input type="checkbox" name="switch_random_offline" lay-filter="switch_random_offline" lay-skin="switch">
+                  </div>
+                </div>
+
+                <div id="offline_timeoffset_container" style="display: none;">
+                  <div class="layui-form-item">
+                    <label class="layui-form-label">断线时间</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="offline_timeoffset"  min="300" placeholder="300" autocomplete="off" class="layui-input">
+                      </div>
+                      <div class="layui-form-mid layui-word-aux">秒</div>
+                      <div class="layui-input-block" style="clear:both;font-size: 12px;line-height: 20px;min-height: 20px;color:#999;">每隔一段时间自动触发用户断线重连</div>
+                  </div>
+                </div>
+                
+
                 <div class="layui-form-item">
                   <label class="layui-form-label">并发类型</label>
                   <div class="layui-input-block">
@@ -261,10 +275,10 @@
           /*{"webSocketHost":"123.56.28.164","webSocketPort":9335},
           {"webSocketHost":"123.56.102.147","webSocketPort":9335}*/
 
-          {"webSocketHost":"10.0.2.85","webSocketPort":9335},
+          /*{"webSocketHost":"10.0.2.85","webSocketPort":9335},
           {"webSocketHost":"10.0.5.47","webSocketPort":9335},
-          {"webSocketHost":"10.0.2.29","webSocketPort":9335}
-          /*{"webSocketHost":"localhost","webSocketPort":9335}*/
+          {"webSocketHost":"10.0.2.29","webSocketPort":9335}*/
+          {"webSocketHost":"10.0.5.47","webSocketPort":9335}
         ]
 
         //if(isDebug){
@@ -363,6 +377,16 @@
                 form.render("checkbox","switch_ip_random_container");
               }
             });  
+
+            form.on('switch(switch_random_offline)',function(data){
+              let selValue = data.elem.checked;
+              if(selValue == true){
+                //显示 ip伪装设置面板
+                $("#offline_timeoffset_container").show()
+              }else{
+                $("#offline_timeoffset_container").hide()
+              }
+            })
 
             form.on('switch(switch_ip_random)',function(data){
               let selValue = data.elem.checked;
