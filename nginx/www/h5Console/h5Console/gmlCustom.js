@@ -78,7 +78,9 @@ function onStartTestingClick(data){
         isTestingState = true;
         //计算是否需要自动停止
         let endTimeStr = data.field["tb_testing_end_time"];
+        let offline_timeoffset = startTestArgsObj["offline_timeoffset"];
         if(endTimeStr && endTimeStr != ""){
+            //定时停止
             let endTime = new Date(endTimeStr).valueOf();
             let nowTime = new Date().valueOf();
             let result = endTime - nowTime;
@@ -88,6 +90,17 @@ function onStartTestingClick(data){
                     onStopTestingClick(null);
                 },result)
             }
+        }else if(data.field["switch_random_offline"] == "on" && offline_timeoffset >= 300){
+            //模拟每隔一段时间全部用户断线，之后停止1分半后，全部用户上线的操作
+            autoStopId = setTimeout(function(){
+                //自动停止
+                onStopTestingClick(null);
+                let tmpStartId = setTimeout(function(){
+                    clearTimeout(tmpStartId)
+                    //定时开启
+                    onStartTestingClick(data)
+                },90000);
+            },offline_timeoffset * 1000)
         }
         return false;
 }
