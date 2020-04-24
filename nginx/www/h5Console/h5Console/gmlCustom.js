@@ -91,7 +91,7 @@ function onStartTestingClick(data){
                 },result)
             }
         }else if(data.field["switch_random_offline"] == "on" && offline_timeoffset >= 300){
-            //模拟每隔一段时间全部用户断线，之后停止1分半后，全部用户上线的操作
+            //模拟每隔一段时间全部用户断线，之后停止两分钟后，全部用户上线的操作
             autoStopId = setTimeout(function(){
                 //自动停止
                 onStopTestingClick(null);
@@ -99,7 +99,7 @@ function onStartTestingClick(data){
                     clearTimeout(tmpStartId)
                     //定时开启
                     onStartTestingClick(data)
-                },90000);
+                },120000);
             },offline_timeoffset * 1000)
         }
         return false;
