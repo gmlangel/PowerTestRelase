@@ -70,10 +70,10 @@ function onStartTestingClick(data){
                 sendWebSocketMsg(dataProviderWebSocketArr[key],startTestArgs);
             }
         }
-        if(canStart == false){
-            layer.msg("压测服务器还未连接成功，请稍后重试......")
-            return false;
-        }
+        // if(canStart == false){
+        //     layer.msg("压测服务器还未连接成功，请稍后重试......")
+        //     return false;
+        // }
         layer.msg("压测程序启动中......")
         isTestingState = true;
         //计算是否需要自动停止
@@ -165,6 +165,11 @@ function createWebSocketConn(config,id){
                 sendWebSocketMsg(ws,startTestArgs);
             }
         },10000);
+        //启动心跳
+        ws.heartbeatID = setInterval(function(){
+            let obj = {"cmd":0xff000003};
+            sendWebSocketMsg(ws,JSON.stringify(obj));
+        },50000)
         ws.isConnected = true;
     }
     ws.onclose = function(){
@@ -215,11 +220,6 @@ function createWebSocketConn(config,id){
                             $("#formStop").removeClass();
                             $("#formStop").addClass("layui-btn")
                         }
-                        //启动心跳
-                        ws.heartbeatID = setInterval(function(){
-                            let obj = {"cmd":0xff000003};
-                            sendWebSocketMsg(ws,JSON.stringify(obj));
-                        },50000)
                         break;
                     case 0xff000005:
                         //收到了启动状态回执
