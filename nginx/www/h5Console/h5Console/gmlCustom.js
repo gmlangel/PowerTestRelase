@@ -110,7 +110,6 @@ function onStopTestingClick(evt){
     if(autoStopId > -1)
         clearTimeout(autoStopId)
     autoStopId = -1
-    startTestArgsObj = null;
     // if(dataProviderWebSocketArr.length > 0){
     //     layer.msg("压测服务器已断开，请稍后重试...")
     //     return;
@@ -268,7 +267,7 @@ function makeTestingResultAndPrint(){
     let Cur_sessionCount = 0
     let Concurrency_req_per_second = 0.0;
     let Concurrency_complete_per_second = 0.0
-    let Success_rate_five_second = 0;
+    //let Success_rate_five_second = 0;
     let UdpReqCount_per_second = 0
     let UdpRecivedCount_per_second = 0;
 
@@ -279,7 +278,7 @@ function makeTestingResultAndPrint(){
             Cur_sessionCount += pkg.Cur_sessionCount
             Concurrency_req_per_second += pkg.Concurrency_req_per_second;
             Concurrency_complete_per_second += pkg.Concurrency_complete_per_second
-            Success_rate_five_second += pkg.Success_rate_five_second;
+            //Success_rate_five_second += pkg.Success_rate_five_second;
             UdpReqCount_per_second += pkg.UdpReqCount_per_second;
             UdpRecivedCount_per_second += pkg.UdpRecivedCount_per_second
         }
@@ -291,7 +290,7 @@ function makeTestingResultAndPrint(){
     msg += "信令req: " + Concurrency_req_per_second + "/s,  "
     msg += "信令res: " + Concurrency_complete_per_second + "/s,  "
     //msg += "每秒心跳: " + pkg.HeartBeatCount_per_second + ",  "
-    msg += "信令每5秒响应比" + (parseFloat(Success_rate_five_second) * 100).toFixed(2) + "%,  "
+    //msg += "信令每5秒响应比" + (parseFloat(Success_rate_five_second) * 100).toFixed(2) + "%,  "
     msg += "UDP发包数: " + UdpReqCount_per_second + "/s,  "
     msg += "UDP收包数: " + UdpRecivedCount_per_second + "/s"
     printLog(msg,0,timeStr)
