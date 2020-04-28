@@ -95,6 +95,14 @@ function onStartTestingClick(data){
             autoStopId = setTimeout(function(){
                 //自动停止
                 onStopTestingClick(null);
+                //终止服务
+                let obj = {"cmd":0xff000006};
+                for(key in dataProviderWebSocketArr){
+                    if(dataProviderWebSocketArr[key] && dataProviderWebSocketArr[key].isConnected == true){
+                        sendWebSocketMsg(dataProviderWebSocketArr[key],JSON.stringify(obj));
+                    }
+                }
+                //延时一段时间后，重新启动压测用例
                 let tmpStartId = setTimeout(function(){
                     clearTimeout(tmpStartId)
                     //定时开启
