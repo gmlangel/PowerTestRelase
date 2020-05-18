@@ -80,7 +80,7 @@ function onStartTestingClick(data){
         let endTimeStr = data.field["tb_testing_end_time"];
         let offline_timeoffset = startTestArgsObj["offline_timeoffset"];
         if(endTimeStr && endTimeStr != ""){
-            endTimeStr = endTimeStr.replace("-","/");
+            endTimeStr = endTimeStr.replace(/[-]/ig,"/");
             //定时停止
             let endTime = new Date(endTimeStr).valueOf();
             let nowTime = new Date().valueOf();
